@@ -141,6 +141,8 @@ type GRPCConfig struct {
 }
 
 type TLSConfig struct {
+	// AllowedClientSPIFFEIDs restricts verified client certificates to exact SPIFFE URI SANs.
+	AllowedClientSPIFFEIDs []string `toml:"allowedClientSPIFFEIDs"`
 	// Reload reads certificate, key and client CA changes on new TLS handshakes.
 	Reload bool   `toml:"reload"`
 	Cert   string `toml:"cert"`
