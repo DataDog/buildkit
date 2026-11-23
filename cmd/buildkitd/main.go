@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"crypto/tls"
-	"crypto/x509"
 	stderrors "errors"
 	"fmt"
 	"net"
@@ -815,44 +814,6 @@ func unaryInterceptor(ctx context.Context, req any, info *grpc.UnaryServerInfo, 
 		}
 	}
 	return resp, err
-}
-
-func serverCredentials(cfg config.TLSConfig) (*tls.Config, error) {
-	certFile := cfg.Cert
-	keyFile := cfg.Key
-	caFile := cfg.CA
-	if certFile == "" && keyFile == "" {
-		return nil, nil
-	}
-	err := errors.New("you must specify key and cert file if one is specified")
-	if certFile == "" {
-		return nil, err
-	}
-	if keyFile == "" {
-		return nil, err
-	}
-	certificate, err := tls.LoadX509KeyPair(certFile, keyFile)
-	if err != nil {
-		return nil, errors.Wrap(err, "could not load server key pair")
-	}
-	tlsConf := &tls.Config{
-		Certificates: []tls.Certificate{certificate},
-		NextProtos:   []string{"h2"},
-	}
-	if caFile != "" {
-		certPool := x509.NewCertPool()
-		ca, err := os.ReadFile(caFile)
-		if err != nil {
-			return nil, errors.Wrap(err, "could not read ca certificate")
-		}
-		// Append the client certificates from the CA
-		if ok := certPool.AppendCertsFromPEM(ca); !ok {
-			return nil, errors.New("failed to append ca cert")
-		}
-		tlsConf.ClientAuth = tls.RequireAndVerifyClientCert
-		tlsConf.ClientCAs = certPool
-	}
-	return tlsConf, nil
 }
 
 func newController(ctx context.Context, c *cli.Command, cfg *config.Config, mp metric.MeterProvider) (*control.Controller, error) {

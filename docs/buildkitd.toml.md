@@ -49,6 +49,11 @@ provenanceEnvDir = "/etc/buildkit/provenance.d"
     cert = "/etc/buildkit/tls.crt"
     key = "/etc/buildkit/tls.key"
     ca = "/etc/buildkit/tlsca.crt"
+    # Refresh server certificate/key and client CA on new handshakes.
+    # Invalid updates retain the last valid configuration; startup still fails
+    # if credentials cannot be loaded. Existing connections are not closed.
+    # A publisher must make coherent file updates (e.g. atomic directory symlinks).
+    reload = false
 
 [otel]
   # OTEL collector trace socket path
