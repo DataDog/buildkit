@@ -54,6 +54,10 @@ provenanceEnvDir = "/etc/buildkit/provenance.d"
     # if credentials cannot be loaded. Existing connections are not closed.
     # A publisher must make coherent file updates (e.g. atomic directory symlinks).
     reload = false
+    # Optional exact SPIFFE URI SAN allowlist, in addition to client CA verification.
+    # Requires ca, rejects missing/multiple URI SANs, and also applies to resumption.
+    # Example: ["spiffe://example.org/kubernetes/ci/build-runner"]
+    allowedClientSPIFFEIDs = []
 
 [otel]
   # OTEL collector trace socket path

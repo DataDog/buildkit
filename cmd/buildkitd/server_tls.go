@@ -17,21 +17,29 @@ import (
 type tlsFileDigests [3][sha256.Size]byte
 
 type serverTLSCredentials struct {
-	mu        sync.Mutex
-	config    config.TLSConfig
-	current   *tls.Config
-	digests   tlsFileDigests
-	lastError string
+	mu                     sync.Mutex
+	config                 config.TLSConfig
+	current                *tls.Config
+	digests                tlsFileDigests
+	lastError              string
+	allowedClientSPIFFEIDs map[string]struct{}
 }
 
 func serverCredentials(cfg config.TLSConfig) (*tls.Config, error) {
-	if cfg.Cert == "" && cfg.Key == "" && !cfg.Reload {
+	allowed, err := parseAllowedClientSPIFFEIDs(cfg.AllowedClientSPIFFEIDs)
+	if err != nil {
+		return nil, err
+	}
+	if len(allowed) != 0 && cfg.CA == "" {
+		return nil, errors.New("allowedClientSPIFFEIDs requires a client CA and mutual TLS")
+	}
+	if cfg.Cert == "" && cfg.Key == "" && !cfg.Reload && len(allowed) == 0 {
 		return nil, nil
 	}
 	if cfg.Cert == "" || cfg.Key == "" {
 		return nil, errors.New("you must specify key and cert file if one is specified")
 	}
-	state := &serverTLSCredentials{config: cfg}
+	state := &serverTLSCredentials{config: cfg, allowedClientSPIFFEIDs: allowed}
 	if err := state.load(); err != nil {
 		return nil, err
 	}
@@ -86,6 +94,12 @@ func (s *serverTLSCredentials) load() error {
 		}
 		tlsConf.ClientAuth = tls.RequireAndVerifyClientCert
 		tlsConf.ClientCAs = pool
+	}
+	if len(s.allowedClientSPIFFEIDs) != 0 {
+		// Unlike VerifyPeerCertificate, this also runs for resumed connections.
+		tlsConf.VerifyConnection = func(cs tls.ConnectionState) error {
+			return authorizeClientSPIFFE(cs.PeerCertificates, s.allowedClientSPIFFEIDs)
+		}
 	}
 	// Publish all material together, only after every configured file parsed.
 	s.current, s.digests = tlsConf, digests
