@@ -141,9 +141,11 @@ type GRPCConfig struct {
 }
 
 type TLSConfig struct {
-	Cert string `toml:"cert"`
-	Key  string `toml:"key"`
-	CA   string `toml:"ca"`
+	// Reload reads certificate, key and client CA changes on new TLS handshakes.
+	Reload bool   `toml:"reload"`
+	Cert   string `toml:"cert"`
+	Key    string `toml:"key"`
+	CA     string `toml:"ca"`
 }
 
 type OTELConfig struct {
